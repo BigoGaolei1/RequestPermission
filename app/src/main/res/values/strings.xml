@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">PermissionTest</string>
+    <string name="request_permissions">Request Permissions</string>
+    <string name="record_permissions_title">Shooting Video</string>
+    <string name="record_permissions_hint">Allow access to enter shooting</string>
+    <string name="record_permissions_allow_camera">Allow camera</string>
+    <string name="record_permissions_allow_microphone">Allow microphone</string>
+    <string name="record_permissions_allow_storage">Allow uploading file</string>
+</resources>
