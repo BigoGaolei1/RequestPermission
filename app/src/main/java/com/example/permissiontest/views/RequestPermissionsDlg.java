@@ -25,6 +25,8 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
 
     public static final String TAG = "RequestPermissionDlg";
 
+    public static final int PERMISSION_RECORD = 110;
+
     private AppCompatActivity mActivity;
     private Dialog mDialog;
     private TextView mBackTv;
@@ -38,7 +40,6 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
     private boolean mHasCameraPermission = false;
     private boolean mHasAudioPermission = false;
     private boolean mHasStoragePermission = false;
-    private boolean mHasPaused = false;
 
     public RequestPermissionsDlg(AppCompatActivity activity) {
         mActivity = activity;
@@ -81,10 +82,7 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
         mAllowAudioTv.setOnClickListener(this);
         mAllowStorageTv.setOnClickListener(this);
 
-        updateViews(mActivity);
-
-        needPermission(113,
-                new String[] {
+        needPermission(new String[] {
                         android.Manifest.permission.CAMERA,
                         android.Manifest.permission.RECORD_AUDIO,
                         android.Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -103,22 +101,13 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
         for (int i = 0; i < grantResults.length; ++i) {
             Log.d(TAG, "grantResults: " + grantResults[i]);
         }
-        updateViews(mActivity);
+        updateViews();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        if (mHasPaused) {
-            mHasPaused = false;
-            updateViews(mActivity);
-        }
-    }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        mHasPaused = true;
+        updateViews();
     }
 
     @Override
@@ -149,58 +138,55 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
     }
 
     private void handleCameraClick() {
-        if (!mHasCameraPermission
-                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
+        if (checkPermissionProhibited(Manifest.permission.CAMERA, mHasCameraPermission)) {
             gotoAppSetting();
         } else {
-            needPermission(113, new String[] {android.Manifest.permission.CAMERA});
+            needPermission(new String[] {android.Manifest.permission.CAMERA});
         }
     }
 
     private void handleMicroPhoneClick() {
-        if (!mHasAudioPermission
-                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.RECORD_AUDIO)) {
+        if (checkPermissionProhibited(Manifest.permission.RECORD_AUDIO, mHasAudioPermission)) {
             gotoAppSetting();
         } else {
-            needPermission(113, new String[] {Manifest.permission.RECORD_AUDIO});
+            needPermission(new String[] {Manifest.permission.RECORD_AUDIO});
         }
     }
 
     private void handleStorageClick() {
-        if (!mHasStoragePermission
-                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+        if (checkPermissionProhibited(Manifest.permission.WRITE_EXTERNAL_STORAGE, mHasStoragePermission)) {
             gotoAppSetting();
         } else {
-            needPermission(113, new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE});
+            needPermission(new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE});
         }
     }
 
-    private void needPermission(int requestCode, String[] permissions) {
-        requestPermissions(permissions, requestCode);
+    private boolean checkPermissionProhibited(String permission, boolean hasPermission) {
+        return (!hasPermission && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, permission));
     }
 
-    private void updateViews(Context context) {
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            mHasCameraPermission = true;
-            mAllowCameraIv.setImageDrawable(getResources().getDrawable(R.drawable.ic_permissions_completion));
-            mAllowCameraTv.setAlpha(0.5f);
-        }
+    private void needPermission(String[] permissions) {
+        requestPermissions(permissions, PERMISSION_RECORD);
+    }
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            mHasAudioPermission = true;
-            mAllowAudioIv.setImageDrawable(getResources().getDrawable(R.drawable.ic_permissions_completion));
-            mAllowAudioTv.setAlpha(0.5f);
-        }
+    private void updateViews() {
 
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-            mHasStoragePermission = true;
-            mAllowStorageIv.setImageDrawable(getResources().getDrawable(R.drawable.ic_permissions_completion));
-            mAllowStorageTv.setAlpha(0.5f);
-        }
+        mHasCameraPermission = checkPermissionAndUpdateView(Manifest.permission.CAMERA, mAllowCameraIv, mAllowCameraTv);
+        mHasAudioPermission = checkPermissionAndUpdateView(Manifest.permission.RECORD_AUDIO, mAllowAudioIv, mAllowAudioTv);
+        mHasStoragePermission = checkPermissionAndUpdateView(Manifest.permission.WRITE_EXTERNAL_STORAGE, mAllowStorageIv, mAllowStorageTv);
 
         if (mHasCameraPermission && mHasAudioPermission && mHasStoragePermission) {
             dismiss();
         }
+    }
+
+    private boolean checkPermissionAndUpdateView(String permission, ImageView image, TextView textView) {
+        boolean hasPermission = (ActivityCompat.checkSelfPermission(mActivity, permission) == PackageManager.PERMISSION_GRANTED);
+        if (hasPermission) {
+            image.setImageDrawable(getResources().getDrawable(R.drawable.ic_permissions_completion));
+            textView.setAlpha(0.5f);
+        }
+        return hasPermission;
     }
 
     private void gotoAppSetting() {
