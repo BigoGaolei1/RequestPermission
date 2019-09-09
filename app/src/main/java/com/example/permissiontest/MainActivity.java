@@ -4,11 +4,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
-import com.example.permissiontest.views.RequestPermissionDlg;
+import com.example.permissiontest.views.RequestPermissionsDlg;
 
 public class MainActivity extends AppCompatActivity {
 
-    private RequestPermissionDlg mRequestPermissionDlg;
+    private RequestPermissionsDlg mRequestPermissionDlg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -18,15 +18,9 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.record_request_permissions).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mRequestPermissionDlg = new RequestPermissionDlg(MainActivity.this);
+                mRequestPermissionDlg = new RequestPermissionsDlg(MainActivity.this);
                 mRequestPermissionDlg.show();
             }
         });
     }
-
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        mRequestPermissionDlg.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//    }
 }
