@@ -35,6 +35,8 @@
         android:layout_marginTop="5dp"
         android:textColor="#99FFFFFF"
         android:textSize="15sp"
+        android:gravity="center"
+        android:maxLines="2"
         android:text="@string/record_permissions_hint"/>
 
     <LinearLayout
@@ -49,6 +51,7 @@
         android:paddingRight="20dp"
         android:background="@drawable/bg_record_permission_item">
         <ImageView
+            android:id="@+id/iv_camera"
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="center_vertical"
@@ -64,7 +67,7 @@
             android:gravity="center"
             android:textSize="16sp"
             android:textColor="#FFFFFF"
-            android:text="@string/record_permissions_allow_camera" />
+            android:text="@string/record_permissions_camera" />
     </LinearLayout>
 
     <LinearLayout
@@ -79,10 +82,11 @@
         android:paddingRight="20dp"
         android:background="@drawable/bg_record_permission_item">
         <ImageView
+            android:id="@+id/iv_microphone"
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="center_vertical"
-            android:src="@drawable/icon_voice"/>
+            android:src="@drawable/icon_voice" />
         <TextView
             android:id="@+id/tv_allow_microphone"
             android:layout_width="0dp"
@@ -94,7 +98,7 @@
             android:gravity="center"
             android:textSize="16sp"
             android:textColor="#FFFFFF"
-            android:text="@string/record_permissions_allow_microphone" />
+            android:text="@string/record_permissions_microphone" />
     </LinearLayout>
 
     <LinearLayout
@@ -109,10 +113,11 @@
         android:paddingRight="20dp"
         android:background="@drawable/bg_record_permission_item">
         <ImageView
+            android:id="@+id/iv_storage"
             android:layout_width="22dp"
             android:layout_height="22dp"
             android:layout_gravity="center_vertical"
-            android:src="@drawable/icon_file"/>
+            android:src="@drawable/icon_file" />
         <TextView
             android:id="@+id/tv_allow_storage"
             android:layout_width="0dp"
@@ -124,7 +129,7 @@
             android:gravity="center"
             android:textSize="16sp"
             android:textColor="#FFFFFF"
-            android:text="@string/record_permissions_allow_storage" />
+            android:text="@string/record_permissions_storage" />
     </LinearLayout>
 
 </RelativeLayout>

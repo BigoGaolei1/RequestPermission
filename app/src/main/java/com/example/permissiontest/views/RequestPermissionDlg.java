@@ -1,14 +1,18 @@
 package com.example.permissiontest.views;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -16,22 +20,31 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.DialogFragment;
-
 import com.example.permissiontest.R;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class RequestPermissionDlg extends DialogFragment implements View.OnClickListener{
 
     public static final String TAG = "RequestPermissionDlg";
 
+    private AppCompatActivity mActivity;
     private Dialog mDialog;
     private TextView mBackTv;
+    private ImageView mAllowCameraIv;
     private TextView mAllowCameraTv;
-    private TextView mAllowMicroPhoneTv;
+    private ImageView mAllowAudioIv;
+    private TextView mAllowAudioTv;
+    private ImageView mAllowStorageIv;
     private TextView mAllowStorageTv;
+
+    private boolean mHasCameraPermission = false;
+    private boolean mHasAudioPermission = false;
+    private boolean mHasStoragePermission = false;
     private PermissionsReqResultListener mListener;
+    private boolean mHasPaused = false;
+
+    public RequestPermissionDlg(AppCompatActivity activity) {
+        mActivity = activity;
+    }
 
     @Nullable
     @Override
@@ -42,9 +55,9 @@ public class RequestPermissionDlg extends DialogFragment implements View.OnClick
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
-        mDialog = new Dialog(getActivity(), R.style.Dialog_Fullscreen);
-        mDialog.setContentView(R.layout.layout_record_permission);
+        mDialog = new Dialog(mActivity, R.style.Dialog_Fullscreen);
         mDialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        mDialog.setContentView(R.layout.layout_record_permission);
         init();
         return mDialog;
     }
@@ -53,24 +66,50 @@ public class RequestPermissionDlg extends DialogFragment implements View.OnClick
         mListener = listener;
     }
 
-    public void show(AppCompatActivity activity) {
-        if (activity == null || mDialog.isShowing()) {
+    public void show() {
+        if (mActivity == null) {
             return;
         }
-        RequestPermissionDlg requestPermissionDlg = new RequestPermissionDlg();
-        requestPermissionDlg.show(activity.getSupportFragmentManager(), TAG);
+        show(mActivity.getSupportFragmentManager(), TAG);
     }
 
     private void init() {
         mBackTv = mDialog.findViewById(R.id.tv_close);
+        mAllowCameraIv = mDialog.findViewById(R.id.iv_camera);
         mAllowCameraTv = mDialog.findViewById(R.id.tv_allow_camera);
-        mAllowMicroPhoneTv = mDialog.findViewById(R.id.tv_allow_microphone);
+        mAllowAudioIv = mDialog.findViewById(R.id.iv_microphone);
+        mAllowAudioTv = mDialog.findViewById(R.id.tv_allow_microphone);
+        mAllowStorageIv = mDialog.findViewById(R.id.iv_storage);
         mAllowStorageTv = mDialog.findViewById(R.id.tv_allow_storage);
 
         mBackTv.setOnClickListener(this);
         mAllowCameraTv.setOnClickListener(this);
-        mAllowMicroPhoneTv.setOnClickListener(this);
+        mAllowAudioTv.setOnClickListener(this);
         mAllowStorageTv.setOnClickListener(this);
+
+        updateViews(mActivity);
+
+        needPermission(113,
+                new String[] {
+                        android.Manifest.permission.CAMERA,
+                        android.Manifest.permission.RECORD_AUDIO,
+                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mHasPaused) {
+            mHasPaused = false;
+            updateViews(mActivity);
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mHasPaused = true;
     }
 
     @Override
@@ -101,51 +140,100 @@ public class RequestPermissionDlg extends DialogFragment implements View.OnClick
     }
 
     private void handleCameraClick() {
-        needPermission(getActivity(), 113,
-                new String[] {
-                        android.Manifest.permission.CAMERA,
-                        android.Manifest.permission.RECORD_AUDIO,
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE
-                });
+        if (!mHasCameraPermission
+                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.CAMERA)) {
+            gotoAppSetting();
+        } else {
+            needPermission(113, new String[] {android.Manifest.permission.CAMERA});
+        }
     }
 
     private void handleMicroPhoneClick() {
-        Uri packageURI = Uri.parse("package:" + getActivity().getPackageName());
-        final Intent intent = new Intent("android.settings.APPLICATION_DETAILS_SETTINGS", packageURI);
-        intent.putExtra("extra_pkgname", getActivity().getPackageName());
-        startActivity(intent);
+        if (!mHasAudioPermission
+                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.RECORD_AUDIO)) {
+            gotoAppSetting();
+        } else {
+            needPermission(113, new String[] {Manifest.permission.RECORD_AUDIO});
+        }
     }
 
     private void handleStorageClick() {
-
+        if (!mHasStoragePermission
+                && !ActivityCompat.shouldShowRequestPermissionRationale(mActivity, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            gotoAppSetting();
+        } else {
+            needPermission(113, new String[] {android.Manifest.permission.WRITE_EXTERNAL_STORAGE});
+        }
     }
 
-    private void needPermission(Activity activity, int requestCode, String[] permissions) {
-        ActivityCompat.requestPermissions(activity, permissions, requestCode);
+    private void needPermission(int requestCode, String[] permissions) {
+        requestPermissions(permissions, requestCode);
+    }
+
+    private void gotoAppSetting() {
+        try {
+            Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setData(android.net.Uri.fromParts("package", getActivity().getPackageName(), null));
+            startActivity(intent);
+        } catch (android.content.ActivityNotFoundException an) {
+            Log.w(TAG, "startActivity error.", an);
+            try {
+                Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            } catch (android.content.ActivityNotFoundException e) {
+                Log.e(TAG, "startActivity error " + e.getMessage());
+            }
+        }
+    }
+
+    private void updateViews(Context context) {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            mHasCameraPermission = true;
+            mAllowCameraIv.setImageDrawable(getResources().getDrawable(R.drawable.icon_completion));
+            mAllowCameraTv.setAlpha(0.5f);
+        }
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            mHasAudioPermission = true;
+            mAllowAudioIv.setImageDrawable(getResources().getDrawable(R.drawable.icon_completion));
+            mAllowAudioTv.setAlpha(0.5f);
+        }
+
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+            mHasStoragePermission = true;
+            mAllowStorageIv.setImageDrawable(getResources().getDrawable(R.drawable.icon_completion));
+            mAllowStorageTv.setAlpha(0.5f);
+        }
+
+        if (mHasCameraPermission && mHasAudioPermission && mHasStoragePermission) {
+            dismiss();
+        }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        Log.d(TAG, "onRequestPermissionsResult");
 
-        if (requestCode == 113) {
+        checkPermissions(requestCode, permissions, grantResults);
 
-        }
-        isAllPermissionsGranted(requestCode, permissions, grantResults);
-        if (mListener != null) {
-            mListener.CheckPermissions(requestCode, permissions, grantResults);
-        }
+        updateViews(mActivity);
     }
 
-    private boolean isAllPermissionsGranted(int requestCode, String[] permissions, int[] grantResults) {
-        for (int i=0;i<grantResults.length;i++) {
+    private void checkPermissions(int requestCode, String[] permissions, int[] grantResults) {
 
+        for (int i = 0; i < grantResults.length; ++i) {
+            Log.d(TAG, "checkPermissions: " + grantResults[i]);
         }
 
-        return false;
+        if (mListener != null) {
+            mListener.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
     }
 
     interface PermissionsReqResultListener {
-        void CheckPermissions(int requestCode, String[] permissions, int[] grantResults);
+        void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults);
     }
 }
