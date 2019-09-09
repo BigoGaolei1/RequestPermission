@@ -105,9 +105,38 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
     }
 
     @Override
+    public void onStart() {
+        super.onStart();
+        updateViews();
+        Log.d(TAG, "onStart: ");
+    }
+
+//    @Override
+//    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//        Log.d(TAG, "onActivityResult: ");
+//        if (requestCode == PERMISSION_RECORD) {
+//            updateViews();
+//        }
+//    }
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        Log.d(TAG, "onPause: ");
+    }
+
+    @Override
     public void onResume() {
         super.onResume();
-        updateViews();
+        Log.d(TAG, "onResume: ");
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.d(TAG, "onStop: ");
     }
 
     @Override
@@ -194,13 +223,13 @@ public class RequestPermissionsDlg extends DialogFragment implements View.OnClic
             Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             intent.setData(android.net.Uri.fromParts("package", getActivity().getPackageName(), null));
-            startActivity(intent);
+            this.startActivityForResult(intent, PERMISSION_RECORD);
         } catch (android.content.ActivityNotFoundException an) {
             Log.w(TAG, "startActivity error.", an);
             try {
                 Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_SETTINGS);
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(intent);
+                this.startActivityForResult(intent, PERMISSION_RECORD);
             } catch (android.content.ActivityNotFoundException e) {
                 Log.e(TAG, "startActivity error " + e.getMessage());
             }
